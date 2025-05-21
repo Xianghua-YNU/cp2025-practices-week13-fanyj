@@ -23,7 +23,7 @@ def load_data(filename):
         data = np.loadtxt(filename, delimiter=',', usecols=(1,))
         return data
     except Exception as e:
-        print(f"Error loading data from {filename}: {e}")
+        print(f"数据加载失败: {e}")
         raise
 
 def plot_data(data, title="Dow Jones Industrial Average"):
@@ -37,11 +37,11 @@ def plot_data(data, title="Dow Jones Industrial Average"):
     返回:
         None
     """
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 6))
     plt.plot(data)
     plt.title(title)
-    plt.xlabel('Time Index')
-    plt.ylabel('Price')
+    plt.xlabel("时间索引")
+    plt.ylabel("道琼斯指数值")
     plt.grid(True)
     plt.show()
 
@@ -58,13 +58,15 @@ def fourier_filter(data, keep_fraction=0.1):
     """
     fft_coeff = np.fft.rfft(data)
     n_coeffs = len(fft_coeff)
-    n_keep = int(keep_fraction * n_coeffs)
+    keep_count = int(keep_fraction * n_coeffs)
     
+    # 创建滤波器系数
     filtered_coeff = np.zeros_like(fft_coeff)
-    filtered_coeff[:n_keep] = fft_coeff[:n_keep]
+    filtered_coeff[:keep_count] = fft_coeff[:keep_count]
     
+    # 执行逆变换
     filtered_data = np.fft.irfft(filtered_coeff)
-    return filtered_data.real, fft_coeff
+    return filtered_data, fft_coeff
 
 def plot_comparison(original, filtered, title="Fourier Filter Result"):
     """
@@ -78,12 +80,12 @@ def plot_comparison(original, filtered, title="Fourier Filter Result"):
     返回:
         None
     """
-    plt.figure(figsize=(10, 6))
-    plt.plot(original, label='Original Data', alpha=0.5)
-    plt.plot(filtered, label='Filtered Data', linewidth=2)
+    plt.figure(figsize=(12, 6))
+    plt.plot(original, label='原始数据', alpha=0.5)
+    plt.plot(filtered, label='滤波数据', linewidth=2)
     plt.title(title)
-    plt.xlabel('Time Index')
-    plt.ylabel('Price')
+    plt.xlabel("时间索引")
+    plt.ylabel("道琼斯指数值")
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -91,15 +93,15 @@ def plot_comparison(original, filtered, title="Fourier Filter Result"):
 def main():
     # 任务1：数据加载与可视化
     data = load_data('dow.txt')
-    plot_data(data, "Dow Jones Industrial Average - Original Data")
+    plot_data(data, "道琼斯工业平均指数 - 原始数据")
     
     # 任务2：傅立叶变换与滤波（保留前10%系数）
     filtered_10, coeff = fourier_filter(data, 0.1)
-    plot_comparison(data, filtered_10, "Fourier Filter (Keep Top 10% Coefficients)")
+    plot_comparison(data, filtered_10, "傅立叶滤波结果 (保留前10%系数)")
     
     # 任务3：修改滤波参数（保留前2%系数）
     filtered_2, _ = fourier_filter(data, 0.02)
-    plot_comparison(data, filtered_2, "Fourier Filter (Keep Top 2% Coefficients)")
+    plot_comparison(data, filtered_2, "傅立叶滤波结果 (保留前2%系数)")
 
 if __name__ == "__main__":
     main()
