@@ -3,7 +3,7 @@
 """
 傅立叶滤波和平滑 - 道琼斯工业平均指数分析解决方案
 
-本模块实现了对道Jones工业平均指数数据的傅立叶分析和滤波处理。
+本模块实现了对道琼斯工业平均指数数据的傅立叶分析和滤波处理。
 """
 
 import numpy as np
@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 def load_data(filename):
     """
-    加载道Jones工业平均指数数据
+    加载道琼斯工业平均指数数据
     
     参数:
         filename (str): 数据文件路径
@@ -20,8 +20,10 @@ def load_data(filename):
         numpy.ndarray: 指数数组
     """
     try:
-        filepath = "dow.txt"
-        return np.loadtxt(filepath)
+        return np.loadtxt(filename)
+    except FileNotFoundError:
+        print(f"错误: 文件未找到 - {filename}")
+        raise
     except Exception as e:
         print(f"加载数据时出错: {str(e)}")
         raise
@@ -36,9 +38,9 @@ def plot_data(data, title="Dow Jones Industrial Average"):
     plt.xlabel("Trading Day")
     plt.ylabel("Index Value")
     plt.grid(True, alpha=0.3)
+    plt.tight_layout()
     plt.show()
     return fig  # 确保返回Figure对象
-
 
 def fourier_filter(data, keep_fraction=0.1):
     """
@@ -78,9 +80,9 @@ def plot_comparison(original, filtered, title="Fourier Filter Result"):
     plt.ylabel("Index Value")
     plt.legend()
     plt.grid(True, alpha=0.3)
+    plt.tight_layout()
     plt.show()
     return fig  # 确保返回Figure对象
-
 
 def main():
     # 任务1：数据加载与可视化
@@ -94,7 +96,6 @@ def main():
     # 任务3：修改滤波参数（保留前2%系数）
     filtered_2, _ = fourier_filter(data, 0.02)
     plot_comparison(data, filtered_2, "Fourier Filter (Keep Top 2% Coefficients)")
-    
 
 if __name__ == "__main__":
     main()
