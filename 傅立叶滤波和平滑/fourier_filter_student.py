@@ -24,10 +24,10 @@ def load_data(filename):
         return data
     except FileNotFoundError:
         print(f"错误：找不到文件 {filename}")
-        return None
+        return np.array([])
     except Exception as e:
-        print(f"错误：加载数据时出错 - {e}")
-        return None
+        print(f"错误：加载文件时发生异常：{e}")
+        return np.array([])
 
 def plot_data(data, title="Dow Jones Industrial Average"):
     """
@@ -40,16 +40,17 @@ def plot_data(data, title="Dow Jones Industrial Average"):
     返回:
         None
     """
-    if data is None:
+    if data.size == 0:
         print("错误：没有数据可绘制")
         return
     
     plt.figure(figsize=(12, 6))
-    plt.plot(data, 'b-', linewidth=1)
-    plt.title(title, fontsize=14)
-    plt.xlabel('Time (days)', fontsize=12)
-    plt.ylabel('Index Value', fontsize=12)
+    plt.plot(data, label='原始数据', color='blue')
+    plt.title(title, fontsize=16)
+    plt.xlabel('时间', fontsize=12)
+    plt.ylabel('指数值', fontsize=12)
     plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend()
     plt.tight_layout()
     plt.show()
 
@@ -64,9 +65,9 @@ def fourier_filter(data, keep_fraction=0.1):
     返回:
         tuple: (滤波后的数据数组, 原始傅立叶系数数组)
     """
-    if data is None:
+    if data.size == 0:
         print("错误：没有数据可处理")
-        return None, None
+        return np.array([]), np.array([])
     
     # 计算实数傅立叶变换
     fft_coeff = np.fft.rfft(data)
@@ -79,8 +80,8 @@ def fourier_filter(data, keep_fraction=0.1):
     filtered_coeff = np.zeros_like(fft_coeff)
     filtered_coeff[:n_keep] = fft_coeff[:n_keep]
     
-    # 计算逆变换
-    filtered_data = np.fft.irfft(filtered_coeff, len(data))
+    # 计算逆傅立叶变换
+    filtered_data = np.fft.irfft(filtered_coeff, n=len(data))
     
     return filtered_data, fft_coeff
 
@@ -96,34 +97,37 @@ def plot_comparison(original, filtered, title="Fourier Filter Result"):
     返回:
         None
     """
-    if original is None or filtered is None:
+    if original.size == 0 or filtered.size == 0:
         print("错误：没有数据可比较")
         return
     
     plt.figure(figsize=(12, 6))
-    plt.plot(original, 'b-', linewidth=1, alpha=0.7, label='Original Data')
-    plt.plot(filtered, 'r-', linewidth=2, label='Filtered Data')
-    plt.title(title, fontsize=14)
-    plt.xlabel('Time (days)', fontsize=12)
-    plt.ylabel('Index Value', fontsize=12)
-    plt.legend(fontsize=10)
+    plt.plot(original, label='原始数据', color='blue', alpha=0.7)
+    plt.plot(filtered, label='滤波后数据', color='red', alpha=0.9)
+    plt.title(title, fontsize=16)
+    plt.xlabel('时间', fontsize=12)
+    plt.ylabel('指数值', fontsize=12)
     plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend()
     plt.tight_layout()
     plt.show()
 
 def main():
     # 任务1：数据加载与可视化
     data = load_data('dow.txt')
+    if data.size == 0:
+        print("程序退出：无法加载数据")
+        return
+    
     plot_data(data, "Dow Jones Industrial Average - Original Data")
     
     # 任务2：傅立叶变换与滤波（保留前10%系数）
-    if data is not None:
-        filtered_10, coeff = fourier_filter(data, 0.1)
-        plot_comparison(data, filtered_10, "Fourier Filter (Keep Top 10% Coefficients)")
-        
-        # 任务3：修改滤波参数（保留前2%系数）
-        filtered_2, _ = fourier_filter(data, 0.02)
-        plot_comparison(data, filtered_2, "Fourier Filter (Keep Top 2% Coefficients)")
+    filtered_10, coeff = fourier_filter(data, 0.1)
+    plot_comparison(data, filtered_10, "Fourier Filter (Keep Top 10% Coefficients)")
+    
+    # 任务3：修改滤波参数（保留前2%系数）
+    filtered_2, _ = fourier_filter(data, 0.02)
+    plot_comparison(data, filtered_2, "Fourier Filter (Keep Top 2% Coefficients)")
 
 if __name__ == "__main__":
     main()
