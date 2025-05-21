@@ -89,7 +89,100 @@ def plot_comparison(original, filtered, title="Fourier Filter Result"):
     plt.legend()
     plt.grid(True)
     plt.show()
-
+def calculate_y_values(self, x_values, energy, potential_func):
+    """
+    计算给定能量下薛定谔方程的波函数值
+    
+    参数:
+        x_values: x坐标数组
+        energy: 能量值
+        potential_func: 势能函数
+        
+    返回:
+        对应x值的波函数值数组
+    """
+    # 常数设置
+    h_bar = 1.0  # 简化值，实际应用中可能需要更精确
+    mass = 1.0   # 简化值
+    
+    # 计算势能
+    V = potential_func(x_values)
+    
+    # 计算薛定谔方程的解
+    y_values = np.sqrt(2.0 / (h_bar**2 * np.pi**2)) * np.sin(np.sqrt(2 * mass * (energy - V)) * x_values / h_bar)
+    
+    return y_values
+    def find_energy_level_bisection(self, potential_func, x_range, n_points, energy_guess, tolerance=1e-6, max_iterations=100, is_ground_state=True):
+    """
+    使用二分法寻找给定势能的能级
+    
+    参数:
+        potential_func: 势能函数
+        x_range: x范围，如[x_min, x_max]
+        n_points: 采样点数
+        energy_guess: 初始能量猜测
+        tolerance: 容忍度
+        max_iterations: 最大迭代次数
+        is_ground_state: 是否寻找基态
+        
+    返回:
+        找到的能级值
+    """
+    x_min, x_max = x_range
+    x = np.linspace(x_min, x_max, n_points)
+    
+    # 定义判别函数，用于判断能量是否太低
+def is_energy_too_low(energy):
+        y = self.calculate_y_values(x, energy, potential_func)
+        # 对于基态，波函数在边界处应该接近零
+        if is_ground_state:
+            return (abs(y[0]) > tolerance or abs(y[-1]) > tolerance) and energy < 0
+        else:
+            # 对于激发态，波函数在至少一个边界处应该改变符号
+            return (np.sign(y[0]) == np.sign(y[-1])) and energy < 0
+    
+    # 二分法寻找能级
+    low = energy_guess
+    high = energy_guess + 100  # 假设初始上界足够大
+    
+    for _ in range(max_iterations):
+        mid = (low + high) / 2
+        if is_energy_too_low(mid):
+            low = mid
+        else:
+            high = mid
+        
+        if high - low < tolerance:
+            break
+    
+    return (low + high) / 2
+def plot_energy_functions(self, x_range, n_points, energies, potential_func, title="Energy Eigenstates"):
+    """
+    绘制不同能量的薛定谔方程波函数
+    
+    参数:
+        x_range: x范围，如[x_min, x_max]
+        n_points: 采样点数
+        energies: 能量列表
+        potential_func: 势能函数
+        title: 图表标题
+    """
+    x = np.linspace(x_range[0], x_range[1], n_points)
+    plt.figure(figsize=(10, 6))
+    
+    for i, energy in enumerate(energies):
+        y = self.calculate_y_values(x, energy, potential_func)
+        # 归一化波函数
+        y = y / np.sqrt(np.trapz(y**2, x))
+        plt.plot(x, y, label=f'E={energy:.2f}')
+    
+    plt.title(title)
+    plt.xlabel('Position (x)')
+    plt.ylabel('Wavefunction (ψ)')
+    plt.legend()
+    plt.grid(True)
+    
+    return plt.gcf()  # 返回图形对象
 def main():
     # 任务1：数据加载与可视化
     data = load_data('dow.txt')
