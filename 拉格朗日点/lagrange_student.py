@@ -32,7 +32,10 @@ def lagrange_equation(r):
     # 地球引力
     earth_gravity = G * M / r ** 2
     # 月球引力
-    moon_gravity = G * m / (R - r) ** 2
+    denominator = R - r
+    if np.isclose(denominator, 0):
+        raise ValueError(f"在计算月球引力时，R - r 接近零，当前 r 值为: {r}")
+    moon_gravity = G * m / denominator ** 2
     # 离心力
     centrifugal_force = omega ** 2 * r
 
@@ -55,7 +58,10 @@ def lagrange_equation_derivative(r):
     # 地球引力项的导数: d/dr (G*M/r^2) = -2*G*M/r^3
     d_earth = -2 * G * M / r ** 3
     # 月球引力项的导数: d/dr (-G*m/(R-r)^2) = -2*G*m/(R-r)^3
-    d_moon = -2 * G * m / (R - r) ** 3
+    denominator = R - r
+    if np.isclose(denominator, 0):
+        raise ValueError(f"在计算月球引力导数时，R - r 接近零，当前 r 值为: {r}")
+    d_moon = -2 * G * m / denominator ** 3
     # 离心力项的导数: d/dr (omega^2*r) = omega^2
     d_centrifugal = omega ** 2
 
@@ -83,8 +89,12 @@ def newton_method(f, df, x0, tol=1e-8, max_iter=100):
     converged = False
 
     for i in range(max_iter):
-        fx = f(x)
-        dfx = df(x)
+        try:
+            fx = f(x)
+            dfx = df(x)
+        except ValueError as ve:
+            print(f"在迭代 {i} 时出现错误: {ve}，终止迭代")
+            break
 
         # 检查导数是否接近零
         if abs(dfx) < 1e-12:
@@ -123,8 +133,12 @@ def secant_method(f, a, b, tol=1e-8, max_iter=100):
     converged = False
 
     for i in range(max_iter):
-        fx = f(x)
-        fx_prev = f(x_prev)
+        try:
+            fx = f(x)
+            fx_prev = f(x_prev)
+        except ValueError as ve:
+            print(f"在迭代 {i} 时出现错误: {ve}，终止迭代")
+            break
 
         # 检查函数值是否接近零
         if abs(fx) < tol:
