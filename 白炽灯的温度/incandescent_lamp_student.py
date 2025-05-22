@@ -33,16 +33,12 @@ def planck_law(wavelength, temperature):
         float or numpy.ndarray: 给定波长和温度下的辐射强度 (W/(m²·m·sr))
     """
     # 防止数值溢出的处理
-    with np.errstate(over='ignore'):
-        exponent = H * C / (wavelength * K_B * temperature)
-        # 处理极大的指数值，防止计算溢出
-        exponent = np.minimum(exponent, 700)  # 700 是一个足够大的值，避免 np.exp 溢出
-
-        numerator = 2 * H * C ** 2 / wavelength ** 5
-        denominator = np.exp(exponent) - 1
-
-        intensity = numerator / denominator
-
+    exponent = H * C / (wavelength * K_B * temperature)
+    # 处理极大的指数值，防止计算溢出
+    exponent = np.where(exponent > 700, 700, exponent)
+    numerator = 2 * H * C ** 2 / wavelength ** 5
+    denominator = np.exp(exponent) - 1
+    intensity = numerator / denominator
     return intensity
 
 
@@ -58,16 +54,20 @@ def calculate_visible_power_ratio(temperature):
     """
     # 计算总辐射功率 (0 到无穷大的积分)
     # 实际上，我们可以在足够大的波长处截断
-    # 适当调整积分范围，让下限更小，上限更大一些
+    # 调整积分范围，同时设置积分误差容限
     total_result, _ = integrate.quad(
         lambda w: planck_law(w, temperature),
-        1e-10, 1e-2  # 从 0.1nm 到 1cm
+        1e-10, 1e-2,  # 从 0.1nm 到 1cm
+        epsabs=1e-10,  # 绝对误差容限设小一些
+        epsrel=1e-8  # 相对误差容限设小一些
     )
 
     # 计算可见光范围内的辐射功率
     visible_result, _ = integrate.quad(
         lambda w: planck_law(w, temperature),
-        VISIBLE_LIGHT_MIN, VISIBLE_LIGHT_MAX
+        VISIBLE_LIGHT_MIN, VISIBLE_LIGHT_MAX,
+        epsabs=1e-10,
+        epsrel=1e-8
     )
 
     # 计算效率
