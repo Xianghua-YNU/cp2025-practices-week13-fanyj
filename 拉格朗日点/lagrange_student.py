@@ -56,7 +56,7 @@ def lagrange_equation_derivative(r):
     # 月球引力项的导数: d/dr (-G*m/(R-r)^2) = -2*G*m/(R-r)^3
     d_moon = -2 * G * m / (R - r)**3
     # 离心力项的导数: d/dr (omega^2*r) = omega^2
-    d_centrifugal = omega**2
+    d_centrifugal = omega^2
     
     # 方程的导数
     derivative_value = d_earth - d_moon - d_centrifugal
