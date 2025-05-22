@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-拉格朗日点 - 地球-月球系统L1点位置计算
+拉格朗日点 - 地球-月球系统L1点位置计算（参考答案）
 
 本模块实现了求解地球-月球系统L1拉格朗日点位置的数值方法。
 """
@@ -10,18 +10,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import optimize
 
-
 # 物理常数
 G = 6.674e-11  # 万有引力常数 (m^3 kg^-1 s^-2)
-M = 5.974e24  # 地球质量 (kg)
-m = 7.348e22  # 月球质量 (kg)
-R = 3.844e8  # 地月距离 (m)
+M = 5.974e24   # 地球质量 (kg)
+m = 7.348e22   # 月球质量 (kg)
+R = 3.844e8    # 地月距离 (m)
 omega = 2.662e-6  # 月球角速度 (s^-1)
 
 
 def lagrange_equation(r):
     """
     L1拉格朗日点位置方程
+
+    在L1点，卫星受到的地球引力、月球引力和离心力平衡。
+    方程形式为：G*M/r^2 - G*m/(R-r)^2 - omega^2*r = 0
 
     参数:
         r (float): 从地心到L1点的距离 (m)
@@ -30,19 +32,16 @@ def lagrange_equation(r):
         float: 方程左右两边的差值，当r是L1点位置时返回0
     """
     # 地球引力
-    earth_gravity = G * M / r ** 2
-    # 月球引力
-    denominator = R - r
-    if np.isclose(denominator, 0):
-        raise ValueError(f"在计算月球引力时，R - r 接近零，当前 r 值为: {r}")
-    moon_gravity = G * m / denominator ** 2
+    earth_gravity = G * M / (r ** 2)
+
+    # 月球引力 (注意方向与地球引力相反)
+    moon_gravity = G * m / ((R - r) ** 2)
+
     # 离心力
     centrifugal_force = omega ** 2 * r
 
-    # 方程：地球引力 - 月球引力 = 离心力
-    equation_value = earth_gravity - moon_gravity - centrifugal_force
-
-    return equation_value
+    # 力平衡方程
+    return earth_gravity - moon_gravity - centrifugal_force
 
 
 def lagrange_equation_derivative(r):
@@ -55,20 +54,17 @@ def lagrange_equation_derivative(r):
     返回:
         float: 方程对r的导数值
     """
-    # 地球引力项的导数: d/dr (G*M/r^2) = -2*G*M/r^3
-    d_earth = -2 * G * M / r ** 3
-    # 月球引力项的导数: d/dr (-G*m/(R-r)^2) = -2*G*m/(R-r)^3
-    denominator = R - r
-    if np.isclose(denominator, 0):
-        raise ValueError(f"在计算月球引力导数时，R - r 接近零，当前 r 值为: {r}")
-    d_moon = -2 * G * m / denominator ** 3
-    # 离心力项的导数: d/dr (omega^2*r) = omega^2
-    d_centrifugal = omega ** 2
+    # 地球引力项的导数
+    earth_gravity_derivative = -2 * G * M / (r ** 3)
 
-    # 方程的导数
-    derivative_value = d_earth - d_moon - d_centrifugal
+    # 月球引力项的导数
+    moon_gravity_derivative = -2 * G * m / ((R - r) ** 3)
 
-    return derivative_value
+    # 离心力项的导数
+    centrifugal_force_derivative = omega ** 2
+
+    # 导数方程
+    return earth_gravity_derivative + moon_gravity_derivative - centrifugal_force_derivative
 
 
 def newton_method(f, df, x0, tol=1e-8, max_iter=100):
@@ -86,32 +82,34 @@ def newton_method(f, df, x0, tol=1e-8, max_iter=100):
         tuple: (近似解, 迭代次数, 收敛标志)
     """
     x = x0
+    iterations = 0
     converged = False
 
     for i in range(max_iter):
-        try:
-            fx = f(x)
-            dfx = df(x)
-        except ValueError as ve:
-            print(f"在迭代 {i} 时出现错误: {ve}，终止迭代")
-            break
-
-        # 检查导数是否接近零
-        if abs(dfx) < 1e-12:
-            print(f"警告: 导数在迭代 {i} 时接近零")
-            break
-
-        # 牛顿法迭代公式
-        x_next = x - fx / dfx
-
-        # 检查收敛
-        if abs(x_next - x) < tol:
+        fx = f(x)
+        if abs(fx) < tol:
             converged = True
+            iterations = i + 1
             break
 
-        x = x_next
+        dfx = df(x)
+        if abs(dfx) < 1e-14:  # 避免除以接近零的数
+            break
 
-    return x, i + 1, converged
+        delta = fx / dfx
+        x_new = x - delta
+
+        # 检查相对变化是否小于容差
+        if abs(delta / x) < tol:
+            converged = True
+            iterations = i + 1
+            x = x_new
+            break
+
+        x = x_new
+        iterations = i + 1
+
+    return x, iterations, converged
 
 
 def secant_method(f, a, b, tol=1e-8, max_iter=100):
@@ -128,40 +126,51 @@ def secant_method(f, a, b, tol=1e-8, max_iter=100):
     返回:
         tuple: (近似解, 迭代次数, 收敛标志)
     """
-    x_prev = a
-    x = b
+    fa = f(a)
+    fb = f(b)
+
+    if abs(fa) < tol:
+        return a, 0, True
+    if abs(fb) < tol:
+        return b, 0, True
+
+    if fa * fb > 0:  # 确保区间端点函数值异号
+        print("警告: 区间端点函数值同号，弦截法可能不收敛")
+
+    iterations = 0
     converged = False
 
+    x0, x1 = a, b
+    f0, f1 = fa, fb
+
     for i in range(max_iter):
-        try:
-            fx = f(x)
-            fx_prev = f(x_prev)
-        except ValueError as ve:
-            print(f"在迭代 {i} 时出现错误: {ve}，终止迭代")
-            break
-
-        # 检查函数值是否接近零
-        if abs(fx) < tol:
-            converged = True
-            break
-
-        # 检查是否存在除零风险
-        if abs(fx - fx_prev) < 1e-12:
-            print(f"警告: 函数值在迭代 {i} 时过于接近")
+        # 避免除以接近零的数
+        if abs(f1 - f0) < 1e-14:
             break
 
         # 弦截法迭代公式
-        x_next = x - fx * (x - x_prev) / (fx - fx_prev)
+        x2 = x1 - f1 * (x1 - x0) / (f1 - f0)
+        f2 = f(x2)
 
-        # 检查收敛
-        if abs(x_next - x) < tol:
+        if abs(f2) < tol:  # 函数值接近零
             converged = True
+            iterations = i + 1
+            x1 = x2
             break
 
-        x_prev = x
-        x = x_next
+        # 检查相对变化是否小于容差
+        if abs((x2 - x1) / x1) < tol:
+            converged = True
+            iterations = i + 1
+            x1 = x2
+            break
 
-    return x, i + 1, converged
+        # 更新迭代值
+        x0, f0 = x1, f1
+        x1, f1 = x2, f2
+        iterations = i + 1
+
+    return x1, iterations, converged
 
 
 def plot_lagrange_equation(r_min, r_max, num_points=1000):
@@ -176,38 +185,44 @@ def plot_lagrange_equation(r_min, r_max, num_points=1000):
     返回:
         matplotlib.figure.Figure: 绘制的图形对象
     """
+    r_values = np.linspace(r_min, r_max, num_points)
+    f_values = np.array([lagrange_equation(r) for r in r_values])
+
+    # 寻找零点附近的位置
+    zero_crossings = np.where(np.diff(np.signbit(f_values)))[0]
+    r_zeros = []
+    for idx in zero_crossings:
+        r1, r2 = r_values[idx], r_values[idx + 1]
+        f1, f2 = f_values[idx], f_values[idx + 1]
+        # 线性插值找到更精确的零点
+        r_zero = r1 - f1 * (r2 - r1) / (f2 - f1)
+        r_zeros.append(r_zero)
+
     # 创建图形
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    # 生成x轴数据
-    r_values = np.linspace(r_min, r_max, num_points)
-
-    # 计算对应的函数值
-    f_values = np.array([lagrange_equation(r) for r in r_values])
-
     # 绘制函数曲线
-    ax.plot(r_values, f_values, 'b-', label='拉格朗日方程')
+    ax.plot(r_values / 1e8, f_values, 'b-', label='L1 point equation')
 
-    # 添加零水平线
-    ax.axhline(y=0, color='r', linestyle='--', label='y=0')
+    # 标记零点
+    for r_zero in r_zeros:
+        ax.plot(r_zero / 1e8, 0, 'ro', label=f'Zero point: {r_zero:.4e} m')
 
-    # 使用scipy求解精确解作为参考
-    r_exact = optimize.fsolve(lagrange_equation, (r_min + r_max) / 2)[0]
-    ax.axvline(x=r_exact, color='g', linestyle='--', label=f'精确解: {r_exact:.2e} m')
+    # 添加水平和垂直参考线
+    ax.axhline(y=0, color='k', linestyle='--', alpha=0.3)
 
-    # 添加标题和标签
-    ax.set_title('地球-月球系统L1拉格朗日点方程')
-    ax.set_xlabel('距离地球中心的距离 (m)')
-    ax.set_ylabel('方程值')
+    # 设置坐标轴标签和标题
+    ax.set_xlabel('Distance from Earth center (10^8 m)')
+    ax.set_ylabel('Equation value')
+    ax.set_title('L1 Lagrange Point Equation')
 
-    # 添加网格和图例
-    ax.grid(True)
-    ax.legend()
+    # 添加图例，只显示一次
+    handles, labels = ax.get_legend_handles_labels()
+    unique_labels = dict(zip(labels, handles))
+    ax.legend(unique_labels.values(), unique_labels.keys())
 
-    # 设置y轴范围，更好地显示零点附近的情况
-    y_min = min(f_values.min(), -1)
-    y_max = max(f_values.max(), 1)
-    ax.set_ylim(y_min, y_max)
+    # 添加网格
+    ax.grid(True, alpha=0.3)
 
     return fig
 
