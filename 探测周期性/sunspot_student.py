@@ -58,13 +58,14 @@ def compute_power_spectrum(sunspots):
     # 执行傅里叶变换
     n = len(sunspots)
     fft_result = np.fft.fft(sunspots)
+    print("傅里叶变换结果部分值:", fft_result[:10])  # 添加调试打印
 
     # 计算功率谱
     power = np.abs(fft_result) ** 2 / n
+    print("功率谱部分值:", power[:10])  # 添加调试打印
 
     # 计算对应的频率
     frequencies = np.fft.fftfreq(n, d=1)  # 假设数据间隔为1个月
-
     # 只保留正频率部分
     positive_freq_indices = np.where(frequencies > 0)
     frequencies = frequencies[positive_freq_indices]
@@ -102,14 +103,18 @@ def find_main_period(frequencies, power):
     返回:
         float: 主周期（月）
     """
+    print("功率谱数组:", power)  # 添加调试打印
     # 找到最大功率对应的索引
     max_power_index = np.argmax(power)
+    print("最大功率索引:", max_power_index)  # 添加调试打印
 
     # 获取对应的频率
     main_frequency = frequencies[max_power_index]
+    print("主频率:", main_frequency)  # 添加调试打印
 
     # 计算周期（频率的倒数）
     main_period = 1 / main_frequency
+    print("计算得到的主周期:", main_period)  # 添加调试打印
 
     return main_period
 
