@@ -28,11 +28,15 @@ def lagrange_equation(r):
     返回:
         float: 方程左右两边的差值，当r是L1点位置时返回0
     """
-    # TODO: 实现L1点位置方程 (约5行代码)
-    # [STUDENT_CODE_HERE]
-    # 提示: 方程应该包含地球引力、月球引力和离心力的平衡关系
+    # 地球引力
+    earth_gravity = G * M / r**2
+    # 月球引力
+    moon_gravity = G * m / (R - r)**2
+    # 离心力
+    centrifugal_force = omega**2 * r
     
-    raise NotImplementedError("请在 {} 中实现此函数。".format(__file__))
+    # 方程：地球引力 - 月球引力 = 离心力
+    equation_value = earth_gravity - moon_gravity - centrifugal_force
     
     return equation_value
 
@@ -47,11 +51,15 @@ def lagrange_equation_derivative(r):
     返回:
         float: 方程对r的导数值
     """
-    # TODO: 实现L1点位置方程的导数 (约5-10行代码)
-    # [STUDENT_CODE_HERE]
-    # 提示: 对lagrange_equation函数求导
+    # 地球引力项的导数: d/dr (G*M/r^2) = -2*G*M/r^3
+    d_earth = -2 * G * M / r**3
+    # 月球引力项的导数: d/dr (-G*m/(R-r)^2) = -2*G*m/(R-r)^3
+    d_moon = -2 * G * m / (R - r)**3
+    # 离心力项的导数: d/dr (omega^2*r) = omega^2
+    d_centrifugal = omega**2
     
-    raise NotImplementedError("请在 {} 中实现此函数。".format(__file__))
+    # 方程的导数
+    derivative_value = d_earth - d_moon - d_centrifugal
     
     return derivative_value
 
@@ -70,13 +78,29 @@ def newton_method(f, df, x0, tol=1e-8, max_iter=100):
     返回:
         tuple: (近似解, 迭代次数, 收敛标志)
     """
-    # TODO: 实现牛顿法 (约15行代码)
-    # [STUDENT_CODE_HERE]
-    # 提示: 迭代公式为 x_{n+1} = x_n - f(x_n)/df(x_n)
+    x = x0
+    converged = False
     
-    raise NotImplementedError("请在 {} 中实现此函数。".format(__file__))
+    for i in range(max_iter):
+        fx = f(x)
+        dfx = df(x)
+        
+        # 检查导数是否接近零
+        if abs(dfx) < 1e-12:
+            print(f"警告: 导数在迭代 {i} 时接近零")
+            break
+        
+        # 牛顿法迭代公式
+        x_next = x - fx / dfx
+        
+        # 检查收敛
+        if abs(x_next - x) < tol:
+            converged = True
+            break
+        
+        x = x_next
     
-    return x, iterations, converged
+    return x, i + 1, converged
 
 
 def secant_method(f, a, b, tol=1e-8, max_iter=100):
@@ -93,13 +117,36 @@ def secant_method(f, a, b, tol=1e-8, max_iter=100):
     返回:
         tuple: (近似解, 迭代次数, 收敛标志)
     """
-    # TODO: 实现弦截法 (约15行代码)
-    # [STUDENT_CODE_HERE]
-    # 提示: 迭代公式为 x_{n+1} = x_n - f(x_n)*(x_n-x_{n-1})/(f(x_n)-f(x_{n-1}))
+    x_prev = a
+    x = b
+    converged = False
     
-    raise NotImplementedError("请在 {} 中实现此函数。".format(__file__))
+    for i in range(max_iter):
+        fx = f(x)
+        fx_prev = f(x_prev)
+        
+        # 检查函数值是否接近零
+        if abs(fx) < tol:
+            converged = True
+            break
+        
+        # 检查是否存在除零风险
+        if abs(fx - fx_prev) < 1e-12:
+            print(f"警告: 函数值在迭代 {i} 时过于接近")
+            break
+        
+        # 弦截法迭代公式
+        x_next = x - fx * (x - x_prev) / (fx - fx_prev)
+        
+        # 检查收敛
+        if abs(x_next - x) < tol:
+            converged = True
+            break
+        
+        x_prev = x
+        x = x_next
     
-    return x, iterations, converged
+    return x, i + 1, converged
 
 
 def plot_lagrange_equation(r_min, r_max, num_points=1000):
@@ -114,11 +161,38 @@ def plot_lagrange_equation(r_min, r_max, num_points=1000):
     返回:
         matplotlib.figure.Figure: 绘制的图形对象
     """
-    # TODO: 实现绘制方程图像的代码 (约15行代码)
-    # [STUDENT_CODE_HERE]
-    # 提示: 在合适的范围内绘制函数图像，标记零点位置
+    # 创建图形
+    fig, ax = plt.subplots(figsize=(10, 6))
     
-    raise NotImplementedError("请在 {} 中实现此函数。".format(__file__))
+    # 生成x轴数据
+    r_values = np.linspace(r_min, r_max, num_points)
+    
+    # 计算对应的函数值
+    f_values = np.array([lagrange_equation(r) for r in r_values])
+    
+    # 绘制函数曲线
+    ax.plot(r_values, f_values, 'b-', label='拉格朗日方程')
+    
+    # 添加零水平线
+    ax.axhline(y=0, color='r', linestyle='--', label='y=0')
+    
+    # 使用scipy求解精确解作为参考
+    r_exact = optimize.fsolve(lagrange_equation, (r_min + r_max) / 2)[0]
+    ax.axvline(x=r_exact, color='g', linestyle='--', label=f'精确解: {r_exact:.2e} m')
+    
+    # 添加标题和标签
+    ax.set_title('地球-月球系统L1拉格朗日点方程')
+    ax.set_xlabel('距离地球中心的距离 (m)')
+    ax.set_ylabel('方程值')
+    
+    # 添加网格和图例
+    ax.grid(True)
+    ax.legend()
+    
+    # 设置y轴范围，更好地显示零点附近的情况
+    y_min = min(f_values.min(), -1)
+    y_max = max(f_values.max(), 1)
+    ax.set_ylim(y_min, y_max)
     
     return fig
 
