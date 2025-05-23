@@ -28,11 +28,18 @@ def calculate_y_values(E_values, V, w, m):
     返回:
         tuple: 包含三个numpy数组 (y1, y2, y3)，分别对应三个函数在给定能量值下的函数值
     """
-    # TODO: 实现计算y1, y2, y3的代码 (约10行代码)
-    # [STUDENT_CODE_HERE]
-    # 提示: 注意单位转换和避免数值计算中的溢出或下溢
+    # 能量转换为焦耳
+    E_joules = E_values * EV_TO_JOULE
+    V_joules = V * EV_TO_JOULE
     
-    raise NotImplementedError("请在 {} 中实现此函数。".format(__file__))
+    # 计算k和α
+    k = np.sqrt(2 * m * E_joules) / HBAR
+    alpha = np.sqrt(2 * m * (V_joules - E_joules)) / HBAR
+    
+    # 计算三个函数值
+    y1 = k * w / 2
+    y2 = np.arctan(alpha / k)
+    y3 = np.arctan(k / alpha) + np.pi/2
     
     return y1, y2, y3
 
@@ -50,11 +57,24 @@ def plot_energy_functions(E_values, y1, y2, y3):
     返回:
         matplotlib.figure.Figure: 绘制的图形对象
     """
-    # TODO: 实现绘制三个函数曲线的代码 (约15行代码)
-    # [STUDENT_CODE_HERE]
-    # 提示: 使用不同颜色和线型，添加适当的标签、图例和标题
+    fig = plt.figure(figsize=(10, 6))
     
-    raise NotImplementedError("请在 {} 中实现此函数。".format(__file__))
+    # 绘制三个函数
+    plt.plot(E_values, y1, 'b-', label=r'$k \cdot w / 2$')
+    plt.plot(E_values, y2, 'r--', label=r'$\arctan(\alpha/k)$ (偶宇称)')
+    plt.plot(E_values, y3, 'g-.', label=r'$\arctan(k/\alpha) + \pi/2$ (奇宇称)')
+    
+    # 添加标记和注释
+    plt.axhline(y=np.pi/2, color='gray', linestyle=':', alpha=0.5)
+    plt.axhline(y=np.pi, color='gray', linestyle=':', alpha=0.5)
+    plt.axhline(y=3*np.pi/2, color='gray', linestyle=':', alpha=0.5)
+    
+    # 设置图形属性
+    plt.xlabel('能量 (eV)')
+    plt.ylabel('函数值')
+    plt.title('方势阱能级方程分析')
+    plt.grid(True, alpha=0.3)
+    plt.legend()
     
     return fig
 
@@ -75,13 +95,33 @@ def find_energy_level_bisection(n, V, w, m, precision=0.001, E_min=0.001, E_max=
     返回:
         float: 第n个能级的能量值 (eV)
     """
-    # TODO: 实现二分法求解能级的代码 (约25行代码)
-    # [STUDENT_CODE_HERE]
-    # 提示: 需要考虑能级的奇偶性，偶数能级使用偶宇称方程，奇数能级使用奇宇称方程
+    # 检查输入参数
+    if E_max is None:
+        E_max = V - precision  # 确保E < V
     
-    raise NotImplementedError("请在 {} 中实现此函数。".format(__file__))
+    # 确定能级的奇偶性
+    is_even = (n % 2 == 0)
     
-    return energy_level
+    # 二分法迭代
+    while (E_max - E_min) > precision:
+        E_mid = (E_min + E_max) / 2
+        
+        # 计算中间能量点的函数值
+        y1, y2, y3 = calculate_y_values(np.array([E_mid]), V, w, m)
+        
+        # 根据奇偶性选择对应的方程
+        if is_even:
+            f_mid = y1[0] - y2[0]
+        else:
+            f_mid = y1[0] - y3[0]
+        
+        # 更新搜索区间
+        if f_mid > 0:
+            E_max = E_mid
+        else:
+            E_min = E_mid
+    
+    return (E_min + E_max) / 2
 
 
 def main():
